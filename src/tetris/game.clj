@@ -1,68 +1,23 @@
 (ns tetris.game
-  (:require [tetris.colors :as colors]))
-
-(def ^:private tetromino-size 4)
+  (:require [tetris.pieces :as pieces]))
 
 (def move-delay 150)
 (def fast-fall-factor (/ 1 10))
 
-(def piece-I
-  { :color colors/light-blue
-    :size 4
-    :squares [[0 1] [1 1] [2 1] [3 1]] })
-
-(def piece-J
-  { :color colors/dark-blue
-    :size 3
-    :squares [[0 0] [0 1] [1 1] [2 1]] })
-
-(def piece-L
-  { :color colors/orange
-    :size 3
-    :squares [[0 1] [1 1] [2 1] [2 0]] })
-
-(def piece-O
-  { :color colors/yellow
-    :size 2
-    :squares [[0 0] [1 0] [0 1] [1 1]] })
-
-(def piece-S
-  { :color colors/green
-    :size 3
-    :squares [[0 1] [1 1] [1 0] [2 1]] })
-
-(def piece-T
-  { :color colors/purple
-    :size 3
-    :squares [[0 1] [1 1] [2 1] [1 0]] })
-
-(def piece-Z
-  { :color colors/red
-    :size 3
-    :squares [[0 0] [1 0] [1 1] [2 1]] })
-
-(def all-pieces
-  [piece-I piece-J piece-L piece-O piece-S piece-T piece-Z])
-
 (defn rotate-piece-counter-clockwise
   [positioned-piece]
-  (let [{{ squares :squares size :size } :piece} positioned-piece
-        new-squares (map #(do [(% 1) (- size (% 0) 1)]) squares)]
-    (assoc-in positioned-piece [:piece :squares] new-squares)))
+  (let [piece (:piece positioned-piece)
+        rotated-piece (pieces/rotate-counter-clockwise piece)]
+    (assoc positioned-piece :piece rotated-piece)))
     
 (defn rotate-piece-clockwise
   [positioned-piece]
-  (let [{{ squares :squares size :size } :piece} positioned-piece
-        new-squares (map #(do [(- size (% 1) 1) (% 0)]) squares)]
-    (assoc-in positioned-piece [:piece :squares] new-squares)))
-
-(defn random-piece
-  []
-  (rand-nth all-pieces))
+  (let [piece (:piece positioned-piece)
+        rotated-piece (pieces/rotate-clockwise piece)]
+    (assoc positioned-piece :piece rotated-piece)))
 
 (defn positioned-piece
   [piece board]
-  ;{ :position [(- (/ (:width (:size board)) 2) (/ (:size piece) 2)) 0]
   { :position [0 0]
     :piece piece })
 
@@ -77,7 +32,7 @@
   {:size {:width width :height height}
    :state {}})
 
-(defn piece-in-bounds
+(defn test-piece-in-bounds
   [board blocks]
   (let [{{:keys [width height]} :size} board
         out-of-bounds (filter (fn [block]
@@ -95,7 +50,7 @@
         piece-board-coords (positioned-piece-to-board-coords piece)
         collisions (filter #(do (contains? state %)) piece-board-coords)]
     (if (empty? collisions)
-      (not (piece-in-bounds board piece-board-coords))
+      (not (test-piece-in-bounds board piece-board-coords))
       true)))
 
 (defn game-rotate-piece-clockwise
@@ -121,7 +76,7 @@
   (-> game
     (game-lock-in-dropping-piece)
     (assoc :current-piece (positioned-piece (:next-piece game) (:board game)))
-    (assoc :next-piece (random-piece))))
+    (assoc :next-piece (pieces/random-piece))))
 
 (defn game-move-piece
   "Returns a new game with the current piece translated by [x y] spaces,
@@ -201,7 +156,6 @@
      :level 1
      :input-delays {}
      :fall-delay 1000  ; milliseconds between piece drop
-     :next-piece (random-piece)
-     :current-piece (positioned-piece (random-piece) board)
+     :next-piece (pieces/random-piece)
+     :current-piece (positioned-piece (pieces/random-piece) board)
      :status :new}))
-
