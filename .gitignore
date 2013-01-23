@@ -7,3 +7,5 @@
 /checkouts
 /.lein-deps-sum
 .*.swp
+/target
+/.lein-repl-history
