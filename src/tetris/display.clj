@@ -5,15 +5,15 @@
            (java.awt.event KeyListener KeyEvent)
            (javax.swing JFrame JPanel)))
 
-(def footer-height 10)
-(def header-height 0)
-(def margin-left 20)
-(def margin-right 20)
-(def board-outline-width 8)
-(def board-outline-color colors/yellow)
-(def block-padding 1)
-(def block-width 20)
-(def padded-block (+ block-width block-padding))
+(def ^:private footer-height 10)
+(def ^:private header-height 0)
+(def ^:private margin-left 20)
+(def ^:private margin-right 20)
+(def ^:private board-outline-width 8)
+(def ^:private board-outline-color colors/yellow)
+(def ^:private block-padding 1)
+(def ^:private block-width 20)
+(def ^:private padded-block (+ block-width block-padding))
 
 (defn- game-screen-size [board]
   (let [{{:keys [width height]} :size} board]
@@ -23,6 +23,21 @@
      :height (+ header-height footer-height
                 board-outline-width
                 (* height (+ block-width block-padding)))}))
+
+(defn- translate-coords [[x y]]
+  "Translates a tetris grid coordinate into a pixel coordinate for drawing"
+  (let [grid-x (+ margin-left board-outline-width block-padding)
+        grid-y header-height
+        x-px (+ grid-x (* x padded-block))
+        y-px (+ grid-y (* y padded-block))]
+    [x-px y-px]))
+
+(defn- piece-to-board-coords
+  [positioned-piece]
+  (let [{:keys [position piece]} positioned-piece
+        [origin-x origin-y] position
+        squares (:squares piece)]
+    (map (fn [[x y]] [(+ x origin-x) (+ y origin-y)]) squares)))
 
 (defn- draw-walls [g board]
   (let [{{:keys [width height]} :size} board
@@ -47,25 +62,10 @@
     (.fillRect g 0 0 width height)
     (draw-walls g board)))
 
-(defn- translate-coords [[x y]]
-  "Translates a tetris grid coordinate into a pixel coordinate for drawing"
-  (let [grid-x (+ margin-left board-outline-width block-padding)
-        grid-y header-height
-        x-px (+ grid-x (* x padded-block))
-        y-px (+ grid-y (* y padded-block))]
-    [x-px y-px]))
-
 (defn- draw-square [g square]
   (let [[x y] square
         [pixel-x pixel-y] (translate-coords [x y])]
     (.fillRect g pixel-x pixel-y block-width block-width)))
-
-(defn- piece-to-board-coords
-  [positioned-piece]
-  (let [{:keys [position piece]} positioned-piece
-        [origin-x origin-y] position
-        squares (:squares piece)]
-    (map (fn [[x y]] [(+ x origin-x) (+ y origin-y)]) squares)))
 
 (defn- draw-positioned-piece
   [g positioned-piece]
@@ -82,22 +82,20 @@
     (.setColor g color)
     (draw-square g square)))
 
-(defn- paint-game
-  [game graphics]
+(defn- draw-game
+  [g game]
   (let [board (:board game)
         dimensions (game-screen-size board)]
-    (draw-board graphics dimensions board)
-    (draw-positioned-piece graphics (:current-piece game))
-    (draw-fallen-blocks graphics (:state board))))
+    (draw-board g dimensions board)
+    (draw-positioned-piece g (:current-piece game))
+    (draw-fallen-blocks g (:state board))))
 
 (defn- observe-frame
   [{ :keys [count last-second] }]
   (let [now (.getTime (new java.util.Date))
         time-elapsed (- now last-second)]
     (if (> time-elapsed 1000)
-      (do
-        ;(println now " - Frame rate: " count " frames/sec   (elapsed " time-elapsed ")")
-        { :count 0 :last-second now })
+      { :count 0 :last-second now }
       { :count (+ count 1) :last-second last-second })))
 
 (defn- create-frame
@@ -109,7 +107,7 @@
       (.setIgnoreRepaint true))
     frame))
 
-(def command-key-map
+(def ^:private command-key-map
   {KeyEvent/VK_LEFT  :move-left
    KeyEvent/VK_RIGHT :move-right
    KeyEvent/VK_DOWN  :move-down
@@ -154,13 +152,13 @@
     (doto canvas
       (.createBufferStrategy 2)
       (.requestFocus))
-    (loop [game (game/start-game game)
+    (loop [game (game/start game)
            frame-counter frame-counter]
-      (let [game (game/step-game game @key-code-atom)
+      (let [game (game/step game @key-code-atom)
             frame-counter (observe-frame frame-counter)
             buffer-strategy (.getBufferStrategy canvas)
             graphics (.getDrawGraphics buffer-strategy)]
-          (paint-game game graphics)
+          (draw-game graphics game)
           (.dispose graphics)
           (.show buffer-strategy)
           (Thread/sleep 10)
