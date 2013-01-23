@@ -111,7 +111,8 @@
   {KeyEvent/VK_LEFT  :move-left
    KeyEvent/VK_RIGHT :move-right
    KeyEvent/VK_DOWN  :move-down
-   KeyEvent/VK_UP    :rotate-right})
+   KeyEvent/VK_UP    :rotate-right
+   KeyEvent/VK_SPACE :drop-piece})
 
 (defn- create-canvas [width-px height-px key-code-atom]
   (let [key-listener (proxy [KeyListener][]

@@ -55,21 +55,25 @@
 
 (defn- drop-piece
   [game]
-  game)
+  (let [{ :keys [current-piece board] } game
+        translation [0 1]
+        drop-seq (board/translated-piece-seq board current-piece translation)
+        last-position-piece (last drop-seq)]
+    (assoc game :current-piece last-position-piece)))
 
 (defn- handle-input
   [game input]
   (let [game (if (contains? input :move-left)
-               (throttle-action game input #(move-piece % [-1 0])) game)
+               (throttle-action game :move-left #(move-piece % [-1 0])) game)
         game (if (contains? input :move-right)
-               (throttle-action game input #(move-piece % [1 0])) game)
+               (throttle-action game :move-right #(move-piece % [1 0])) game)
         game (if (contains? input :rotate-right)
-               (throttle-action game input #(rotate-piece-clockwise %)) game)
+               (throttle-action game :rotate-right #(rotate-piece-clockwise %)) game)
         fast-drop (:fast-drop game)
-        game (if (contains? input :move-down)
-               (assoc game :fast-drop true)
-               (dissoc game :fast-drop))
-        game (if (contains? input :drop-now) (drop-piece game) game)]
+        game (if (contains? input :move-down) (assoc game :fast-drop true) (dissoc game :fast-drop))
+        game (if (contains? input :drop-piece)
+               (throttle-action game :drop-piece #(drop-piece %))
+               game)]
     game))
 
 (defn- fall-delay
