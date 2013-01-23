@@ -5,27 +5,11 @@
 (def ^:private move-delay 150)
 (def ^:private fast-fall-factor (/ 1 10))
 
-(defn- positioned-piece-to-board-coords
-  [positioned-piece]
-  (let [{{ squares :squares } :piece position :position } positioned-piece]
-    (map #(do [(+ (% 0) (position 0)) (+ (% 1) (position 1))]) squares)))
-
-(defn- piece-collision-test
-  "Tests to see if the passed piece collides with any other elements"
-  [board piece]
-  (let [{{:keys [width height]} :size} board
-        state (:state board)
-        piece-board-coords (positioned-piece-to-board-coords piece)
-        collisions (filter #(do (contains? state %)) piece-board-coords)]
-    (if (empty? collisions)
-      (not (board/test-coords-in-bounds board piece-board-coords))
-      true)))
-
 (defn- rotate-piece-clockwise
   [game]
   (let [piece (:current-piece game)
         rotated-piece (board/rotate-piece-clockwise piece)]
-    (if (piece-collision-test (:board game) rotated-piece)
+    (if (board/piece-collision-test (:board game) rotated-piece)
       game
       (assoc game :current-piece rotated-piece))))
 
@@ -51,16 +35,13 @@
    if there are no collisions. Returns unchanged game if there are."
   [game translation]
   (let [{ :keys [current-piece board] } game
-        { :keys [position piece] } current-piece
-        new-position [(+ (position 0) (translation 0))
-                      (+ (position 1) (translation 1))]
-        new-piece { :position new-position :piece piece }]
-    (if (piece-collision-test board new-piece)
-      (if (> (translation 1) 0)
+        [_ dy] translation
+        new-piece (nth (board/translated-piece-seq board current-piece translation) 1 nil)]
+    (if (nil? new-piece)
+      (if (> dy 0)
         (place-new-piece game)
         game)
-      (do
-        (assoc game :current-piece new-piece)))))
+      (assoc game :current-piece new-piece))))
 
 (defn- throttle-action
   [game action-name action]
