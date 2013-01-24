@@ -24,6 +24,14 @@
                 board-outline-width
                 (* height (+ block-width block-padding)))}))
 
+(defn- inset-px-rect
+  "Returns the square that has been inset by a specified number of pixels"
+  [rect inset]
+  (let [{ { :keys [width height] } :size [x y] :origin } rect]
+    { :origin [(+ x inset) (+ y inset)]
+      :size { :width (- width (* 2 inset))
+              :height (- height (* 2 inset))}}))
+
 (defn- translate-coords [[x y]]
   "Translates a tetris grid coordinate into a pixel coordinate for drawing"
   (let [grid-x (+ margin-left board-outline-width block-padding)
@@ -62,10 +70,19 @@
     (.fillRect g 0 0 width height)
     (draw-walls g board)))
 
-(defn- draw-square [g square]
+(defn- draw-filled-square [g square]
   (let [[x y] square
         [pixel-x pixel-y] (translate-coords [x y])]
     (.fillRect g pixel-x pixel-y block-width block-width)))
+
+(defn- draw-outline-square [g square]
+  (let [[x y] square
+        origin-px (translate-coords [x y])
+        rect-px { :origin origin-px :size { :width block-width :height block-width } }
+        rect-px (inset-px-rect rect-px 1)
+        [pixel-x pixel-y] (:origin rect-px)
+        { :keys [width height] } (:size rect-px)]
+    (.drawRect g pixel-x pixel-y width height)))
 
 (defn- draw-positioned-piece
   [g positioned-piece]
@@ -74,19 +91,29 @@
         squares (piece-to-board-coords positioned-piece)]
     (.setColor g color)
     (doseq [square squares]
-      (draw-square g square))))
+      (draw-filled-square g square))))
+
+(defn- draw-ghost-piece
+  [g positioned-piece]
+  (let [{:keys [position piece]} positioned-piece
+        color (:color piece)
+        squares (piece-to-board-coords positioned-piece)]
+    (.setColor g color)
+    (doseq [square squares]
+      (draw-outline-square g square))))
 
 (defn- draw-fallen-blocks
   [g blocks]
   (doseq [[square color] blocks]
     (.setColor g color)
-    (draw-square g square)))
+    (draw-filled-square g square)))
 
 (defn- draw-game
   [g game]
   (let [board (:board game)
         dimensions (game-screen-size board)]
     (draw-board g dimensions board)
+    (draw-ghost-piece g (:ghost-piece game))
     (draw-positioned-piece g (:current-piece game))
     (draw-fallen-blocks g (:state board))))
 

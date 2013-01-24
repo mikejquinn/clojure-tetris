@@ -11,7 +11,8 @@
         rotated-piece (board/rotate-piece-clockwise piece)]
     (if (board/piece-collision-test (:board game) rotated-piece)
       game
-      (assoc game :current-piece rotated-piece))))
+      (let [new-ghost (board/dropped-piece (:board game) rotated-piece)]
+        (assoc game :current-piece rotated-piece :ghost-piece new-ghost)))))
 
 (defn- lock-in-dropping-piece
   [game]
@@ -25,10 +26,12 @@
 
 (defn- place-new-piece
   [game]
-  (-> game
-    (lock-in-dropping-piece)
-    (assoc :current-piece (board/positioned-piece (:board game ) (:next-piece game)))
-    (assoc :next-piece (pieces/random-piece))))
+  (let [board (:board game)
+        new-piece (board/positioned-piece board (:next-piece game))
+        new-ghost (board/dropped-piece board new-piece)]
+    (-> game
+      (lock-in-dropping-piece)
+      (assoc :current-piece new-piece :ghost-piece new-ghost :next-piece (pieces/random-piece)))))
 
 (defn- move-piece
   "Returns a new game with the current piece translated by [x y] spaces,
@@ -41,7 +44,9 @@
       (if (> dy 0)
         (place-new-piece game)
         game)
-      (assoc game :current-piece new-piece))))
+      (assoc game
+             :current-piece new-piece
+             :ghost-piece (board/dropped-piece (:board game) new-piece)))))
 
 (defn- throttle-action
   [game action-name action]
@@ -57,9 +62,8 @@
   [game]
   (let [{ :keys [current-piece board] } game
         translation [0 1]
-        drop-seq (board/translated-piece-seq board current-piece translation)
-        last-position-piece (last drop-seq)]
-    (assoc game :current-piece last-position-piece)))
+        dropped-piece (board/dropped-piece board current-piece)]
+    (assoc game :current-piece dropped-piece)))
 
 (defn- handle-input
   [game input]
@@ -106,12 +110,14 @@
 (defn new-game
   "Initializes a new game with an empty board"
   [width height]
-  (let [board (board/empty-board width height)]
+  (let [board (board/empty-board width height)
+        current-piece (board/positioned-piece board (pieces/random-piece))]
     {:board board
      :score 0
      :level 1
      :input-delays {}
      :fall-delay 1000  ; milliseconds between piece drop
      :next-piece (pieces/random-piece)
-     :current-piece (board/positioned-piece board (pieces/random-piece))
+     :current-piece current-piece
+     :ghost-piece (board/dropped-piece board current-piece)
      :status :new}))

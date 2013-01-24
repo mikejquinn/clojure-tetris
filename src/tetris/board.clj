@@ -59,6 +59,11 @@
               nil
               (translated-piece-seq board new-piece translation))))))
 
+(defn dropped-piece
+  [board positioned-piece]
+  (let [drop-seq (translated-piece-seq board positioned-piece [0 1])]
+    (last drop-seq)))
+
 (defn positioned-piece
   [board piece]
   { :position [0 0]
