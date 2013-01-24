@@ -7,14 +7,22 @@
 
 (def ^:private footer-height 20)
 (def ^:private header-height 20)
-(def ^:private margin-left 30)
-(def ^:private margin-right 200)
 (def ^:private board-outline-width 8)
 (def ^:private board-outline-color colors/yellow)
 (def ^:private block-padding 1)
 (def ^:private block-width 20)
 (def ^:private overflow 2)
 (def ^:private padded-block (+ block-width block-padding))
+(def ^:private margin-left 30)
+(def ^:private margin-right (* padded-block 10))
+(def ^:private board-origin
+   [(+ margin-left board-outline-width block-padding) header-height])
+
+(defn- next-piece-origin
+  [screen-size]
+  [(+ (* padded-block 2)
+      (- (:width screen-size) margin-right))
+   (* padded-block 4)])
 
 (defn- game-screen-size [board]
   (let [{{:keys [width height]} :size} board]
@@ -33,13 +41,15 @@
       :size { :width (- width (* 2 inset))
               :height (- height (* 2 inset))}}))
 
-(defn- translate-coords [[x y]]
-  "Translates a tetris grid coordinate into a pixel coordinate for drawing"
-  (let [grid-x (+ margin-left board-outline-width block-padding)
-        grid-y header-height
-        x-px (+ grid-x (* x padded-block))
-        y-px (+ grid-y (* y padded-block))]
-    [x-px y-px]))
+(defn- translate-coords
+  "Translates a tetris grid coordinate into a pixel coordinate for drawing.
+  Optionally takes the opper left pixel coordinate - but this defaults to
+  the top left of the game board."
+  ([[x y]] (translate-coords board-origin [x y]))
+  ([[grid-x grid-y] [x y]]
+   (let [x-px (+ grid-x (* x padded-block))
+         y-px (+ grid-y (* y padded-block))]
+     [x-px y-px])))
 
 (defn- piece-to-board-coords
   [positioned-piece]
@@ -71,10 +81,12 @@
     (.fillRect g 0 0 width height)
     (draw-walls g board)))
 
-(defn- draw-filled-square [g square]
-  (let [[x y] square
-        [pixel-x pixel-y] (translate-coords [x y])]
-    (.fillRect g pixel-x pixel-y block-width block-width)))
+(defn- draw-filled-square
+  ([g square] (draw-filled-square g square board-origin))
+  ([g square origin]
+   (let [[x y] square
+         [pixel-x pixel-y] (translate-coords origin [x y])]
+     (.fillRect g pixel-x pixel-y block-width block-width))))
 
 (defn- draw-outline-square [g square]
   (let [[x y] square
@@ -94,6 +106,18 @@
     (doseq [square squares]
       (draw-filled-square g square))))
 
+(defn- draw-next-piece
+  [g piece origin]
+  (let [{ :keys [color squares] } piece
+        text (char-array "Next piece:")
+        [origin-x origin-y] origin]
+    (.setColor g color)
+    (doseq [square squares]
+      (draw-filled-square g square origin))
+    (.setColor g colors/white)
+    (.drawChars g text 0 (count text) (- origin-x 10) (- origin-y 15))
+    ))
+
 (defn- draw-ghost-piece
   [g positioned-piece]
   (let [{:keys [position piece]} positioned-piece
@@ -112,10 +136,13 @@
 (defn- draw-game
   [g game]
   (let [board (:board game)
-        dimensions (game-screen-size board)]
+        screen-size (game-screen-size board)
+        dimensions screen-size
+        next-origin (next-piece-origin screen-size)]
     (draw-board g dimensions board)
     (draw-ghost-piece g (:ghost-piece game))
     (draw-positioned-piece g (:current-piece game))
+    (draw-next-piece g (first (:piece-bag game)) next-origin)
     (draw-fallen-blocks g (:state board))))
 
 (defn- observe-frame
