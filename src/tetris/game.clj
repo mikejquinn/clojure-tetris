@@ -61,11 +61,9 @@
 
 (defn- drop-piece
   [game current-time]
-  (let [{ :keys [current-piece board] } game
-        translation [0 1]
-        dropped-piece (board/dropped-piece board current-piece)]
+  (let [{ :keys [current-piece board] } game]
     (-> game
-      (assoc :current-piece dropped-piece)
+      (assoc :current-piece (:ghost-piece game))
       (place-new-piece current-time))))
 
 (defn- handle-input
