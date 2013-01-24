@@ -25,61 +25,61 @@
     (assoc-in game [:board :state] new-board-state)))
 
 (defn- place-new-piece
-  [game]
+  [game current-time]
   (let [board (:board game)
         new-piece (board/positioned-piece board (:next-piece game))
         new-ghost (board/dropped-piece board new-piece)]
     (-> game
       (lock-in-dropping-piece)
       (assoc :current-piece new-piece :ghost-piece new-ghost :next-piece (pieces/random-piece)
-             :last-fall-time (System/currentTimeMillis)))))
+             :last-fall-time current-time))))
 
 (defn- move-piece
   "Returns a new game with the current piece translated by [x y] spaces,
    if there are no collisions. Returns unchanged game if there are."
-  [game translation]
+  [game translation current-time]
   (let [{ :keys [current-piece board] } game
         [_ dy] translation
         new-piece (nth (board/translated-piece-seq board current-piece translation) 1 nil)]
     (if (nil? new-piece)
       (if (> dy 0)
-        (place-new-piece game)
+        (place-new-piece game current-time)
         game)
       (assoc game
              :current-piece new-piece
              :ghost-piece (board/dropped-piece (:board game) new-piece)))))
 
 (defn- throttle-action
-  [game action-name action]
+  [game action-name action current-time]
   (let [last-press (get-in game [:input-delays action-name])]
-    (if (or (nil? last-press) (> (- (System/currentTimeMillis) last-press) move-delay))
+    (if (or (nil? last-press) (> (- current-time last-press) move-delay))
       (do
         (-> game
           (action)
-          (assoc-in [:input-delays action-name] (System/currentTimeMillis))))
+          (assoc-in [:input-delays action-name] current-time)))
       game)))
 
 (defn- drop-piece
-  [game]
+  [game current-time]
   (let [{ :keys [current-piece board] } game
         translation [0 1]
         dropped-piece (board/dropped-piece board current-piece)]
     (-> game
       (assoc :current-piece dropped-piece)
-      (place-new-piece))))
+      (place-new-piece current-time))))
 
 (defn- handle-input
-  [game input]
+  [game input current-time]
   (let [game (if (contains? input :move-left)
-               (throttle-action game :move-left #(move-piece % [-1 0])) game)
+               (throttle-action game :move-left #(move-piece % [-1 0] current-time) current-time) game)
         game (if (contains? input :move-right)
-               (throttle-action game :move-right #(move-piece % [1 0])) game)
+               (throttle-action game :move-right #(move-piece % [1 0] current-time) current-time) game)
         game (if (contains? input :rotate-right)
-               (throttle-action game :rotate-right #(rotate-piece-clockwise %)) game)
+               (throttle-action game :rotate-right #(rotate-piece-clockwise %) current-time) game)
         fast-drop (:fast-drop game)
         game (if (contains? input :move-down) (assoc game :fast-drop true) (dissoc game :fast-drop))
         game (if (contains? input :drop-piece)
-               (throttle-action game :drop-piece #(drop-piece %))
+               (throttle-action game :drop-piece #(drop-piece % current-time) current-time)
                game)]
     game))
 
@@ -91,24 +91,24 @@
     fall-delay)))
 
 (defn- handle-fall
-  [game]
-  (let [time-delta (- (System/currentTimeMillis) (:last-fall-time game))
+  [game current-time]
+  (let [time-delta (- current-time (:last-fall-time game))
         fall-delay (fall-delay game)]
     (if (> time-delta fall-delay)
-      (let [game (move-piece game [0 1])
-            game (assoc game :last-fall-time (System/currentTimeMillis))]
+      (let [game (move-piece game [0 1] current-time)
+            game (assoc game :last-fall-time current-time)]
         game)
       game)))
 
 (defn start
-  [game]
-  (assoc game :status :dropping :last-fall-time (System/currentTimeMillis)))
+  [game current-time]
+  (assoc game :status :dropping :last-fall-time current-time))
 
 (defn step
-  [game input]
+  [game input current-time]
   (-> game
-    (handle-input input)
-    (handle-fall)))
+    (handle-input input current-time)
+    (handle-fall current-time)))
 
 (defn new-game
   "Initializes a new game with an empty board"

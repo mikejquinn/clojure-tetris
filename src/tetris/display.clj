@@ -180,9 +180,10 @@
     (doto canvas
       (.createBufferStrategy 2)
       (.requestFocus))
-    (loop [game (game/start game)
+    (loop [game (game/start game (System/currentTimeMillis))
            frame-counter frame-counter]
-      (let [game (game/step game @key-code-atom)
+      (let [current-time (System/currentTimeMillis)
+            game (game/step game @key-code-atom current-time)
             frame-counter (observe-frame frame-counter)
             buffer-strategy (.getBufferStrategy canvas)
             graphics (.getDrawGraphics buffer-strategy)]
