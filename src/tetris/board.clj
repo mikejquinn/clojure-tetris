@@ -1,6 +1,7 @@
 (ns tetris.board
   (:require [tetris.pieces :as pieces]
-            [tetris.util :as util]))
+            [tetris.util :as util])
+  (:use clojure.contrib.math))
 
 (defn rotate-piece-counter-clockwise
   [positioned-piece]
@@ -103,8 +104,12 @@
 
 (defn positioned-piece
   [board piece]
-  { :position [0 0]
-    :piece piece })
+  (let [{{ width :width } :size} board
+        center (floor (/ width 2))
+        sub (floor (/ (piece :size) 2))
+        center (- center sub)]
+    {:position [center 0]
+     :piece piece }))
 
 (defn empty-board
   "Create a rectangular tetris board with the specified width and height."
