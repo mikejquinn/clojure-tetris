@@ -32,10 +32,13 @@
 (defn- place-new-piece
   [game current-time]
   (let [board (:board game)
-        new-piece (board/positioned-piece board (:next-piece game))
+        piece-bag (:piece-bag game)
+        new-piece (board/positioned-piece board (first piece-bag))
         new-ghost (board/dropped-piece board new-piece)]
     (assoc game
-           :current-piece new-piece :ghost-piece new-ghost :next-piece (pieces/random-piece)
+           :current-piece new-piece
+           :ghost-piece new-ghost
+           :piece-bag (rest piece-bag)
            :last-fall-time current-time)))
 
 (defn- clear-completed-rows
@@ -129,13 +132,16 @@
   "Initializes a new game with an empty board"
   [width height]
   (let [board (board/empty-board width height)
-        current-piece (board/positioned-piece board (pieces/random-piece))]
+        piece-bag (pieces/random-piece-generator)
+        first-piece (first piece-bag)
+        piece-bag (rest piece-bag)
+        current-piece (board/positioned-piece board first-piece)]
     {:board board
      :score 0
      :level 1
      :input-delays {}
      :fall-delay 1000  ; milliseconds between piece drop
-     :next-piece (pieces/random-piece)
+     :piece-bag piece-bag
      :current-piece current-piece
      :ghost-piece (board/dropped-piece board current-piece)
      :status :new}))

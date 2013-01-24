@@ -43,6 +43,21 @@
   []
   (rand-nth all-pieces))
 
+(defn random-piece-generator
+  "Returns an infinite sequence of tetrominos. The randomization
+  algorithm generates a randomized bag of all available tetrominos,
+  and selects only from that bag until its contents are exhausted,
+  at which point a new random bag is generated. This prevents
+  the player from receiving a long string of the exact same tetromino
+  in a row."
+  ([] (random-piece-generator (shuffle all-pieces)))
+  ([piece-bag]
+   (lazy-seq
+     ;(if-let [s (seq piece-bag)]
+     (if-let [next-piece (first piece-bag)]
+       (cons next-piece (random-piece-generator (rest piece-bag)))
+       (random-piece-generator)))))
+
 (defn rotate-counter-clockwise
   [piece]
   (let [{ :keys [squares size] } piece
