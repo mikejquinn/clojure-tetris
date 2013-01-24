@@ -1,5 +1,6 @@
 (ns tetris.board
-  (:require [tetris.pieces :as pieces]))
+  (:require [tetris.pieces :as pieces]
+            [tetris.util :as util]))
 
 (defn rotate-piece-counter-clockwise
   [positioned-piece]
@@ -46,6 +47,42 @@
         [x y] position
         new-origin [(+ x dx), (+ y dy)]]
     { :position new-origin :piece piece }))
+
+(defn row-coords
+  "Returns a sequence with the coordinates of all points in a row
+   on the game board. The bottom row of the board is considered row 0."
+  [board row]
+  (let [{{ height :height width :width } :size} board
+        y (- height 1 row)]
+    (map #(do [% y]) (range width))))
+
+(defn all-row-seqs
+  "Returns a sequence of sequences - one sequence per row on the game board,
+   from bottom to top. Each sequence contains all the coordinates in the row."
+  [board]
+  (let [{{ height :height width :width } :size} board]
+    (map #(row-coords board %) (range height))))
+
+(defn- shift-unempty-row
+  "Returns a function used by remove-filled-rows to remove all 'full' rows
+   from the game board AND cause higher rows to fall down to fill the new
+   available space."
+  [orig-state width]
+  (fn [[translate state] row]
+    (let [filled (util/hash-slice orig-state row)]
+      (if (< (count filled) width)
+        (let [row-map (reduce-kv (fn [h [x y] v]
+                                   (assoc h [x (+ y translate)] v)) {} filled)]
+          [translate (merge state row-map)])
+        [(+ 1 translate) state]))))
+
+(defn remove-filled-rows
+  [board]
+  "Returns a new board by removing all filled rows and shifting higher rows
+   downward to fill the new available space."
+  (let [{{ width :width } :size state :state} board
+        [_ new-state] (reduce (shift-unempty-row state width) [0 {}] (all-row-seqs board))]
+    (assoc board :state new-state)))
 
 (defn translated-piece-seq
   "Creates a lazy sequence of iterative translations to a positioned piece on

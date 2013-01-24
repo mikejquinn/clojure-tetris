@@ -14,7 +14,12 @@
       (let [new-ghost (board/dropped-piece (:board game) rotated-piece)]
         (assoc game :current-piece rotated-piece :ghost-piece new-ghost)))))
 
-(defn- lock-in-dropping-piece
+(defn- lock-in-current-piece
+  "Converts the currently falling piece (which is described by an origin point
+   and a set of offsets from that point) into real board coordinates and saves them
+   them in the board state. We no longer care that the blocks that comprised this
+   piece were ever linked, so they're stored separately in the board along with
+   their color."
   [game]
   (let [piece (:current-piece game)
         board (:board game)
@@ -26,13 +31,25 @@
 
 (defn- place-new-piece
   [game current-time]
-  (let [game (lock-in-dropping-piece game)
-        board (:board game)
+  (let [board (:board game)
         new-piece (board/positioned-piece board (:next-piece game))
         new-ghost (board/dropped-piece board new-piece)]
     (assoc game
            :current-piece new-piece :ghost-piece new-ghost :next-piece (pieces/random-piece)
            :last-fall-time current-time)))
+
+(defn- clear-completed-rows
+  [game]
+  (let [new-board (board/remove-filled-rows (:board game))]
+    (assoc game :board new-board)))
+
+(defn- finalize-drop
+  "Completes the current drop, and sets up a game with a new piece."
+  [game current-time]
+  (-> game
+    (lock-in-current-piece)
+    (clear-completed-rows)
+    (place-new-piece current-time)))
 
 (defn- move-piece
   "Returns a new game with the current piece translated by [x y] spaces,
@@ -43,7 +60,7 @@
         new-piece (nth (board/translated-piece-seq board current-piece translation) 1 nil)]
     (if (nil? new-piece)
       (if (> dy 0)
-        (place-new-piece game current-time)
+        (finalize-drop game current-time)
         game)
       (assoc game
              :current-piece new-piece
@@ -64,7 +81,7 @@
   (let [{ :keys [current-piece board] } game]
     (-> game
       (assoc :current-piece (:ghost-piece game))
-      (place-new-piece current-time))))
+      (finalize-drop current-time))))
 
 (defn- handle-input
   [game input current-time]
