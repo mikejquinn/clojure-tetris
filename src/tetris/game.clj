@@ -31,7 +31,8 @@
         new-ghost (board/dropped-piece board new-piece)]
     (-> game
       (lock-in-dropping-piece)
-      (assoc :current-piece new-piece :ghost-piece new-ghost :next-piece (pieces/random-piece)))))
+      (assoc :current-piece new-piece :ghost-piece new-ghost :next-piece (pieces/random-piece)
+             :last-fall-time (System/currentTimeMillis)))))
 
 (defn- move-piece
   "Returns a new game with the current piece translated by [x y] spaces,
@@ -63,7 +64,9 @@
   (let [{ :keys [current-piece board] } game
         translation [0 1]
         dropped-piece (board/dropped-piece board current-piece)]
-    (assoc game :current-piece dropped-piece)))
+    (-> game
+      (assoc :current-piece dropped-piece)
+      (place-new-piece))))
 
 (defn- handle-input
   [game input]
