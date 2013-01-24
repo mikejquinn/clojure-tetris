@@ -5,14 +5,15 @@
            (java.awt.event KeyListener KeyEvent)
            (javax.swing JFrame JPanel)))
 
-(def ^:private footer-height 10)
-(def ^:private header-height 0)
-(def ^:private margin-left 20)
-(def ^:private margin-right 20)
+(def ^:private footer-height 20)
+(def ^:private header-height 20)
+(def ^:private margin-left 30)
+(def ^:private margin-right 200)
 (def ^:private board-outline-width 8)
 (def ^:private board-outline-color colors/yellow)
 (def ^:private block-padding 1)
 (def ^:private block-width 20)
+(def ^:private overflow 2)
 (def ^:private padded-block (+ block-width block-padding))
 
 (defn- game-screen-size [board]
@@ -50,12 +51,12 @@
 (defn- draw-walls [g board]
   (let [{{:keys [width height]} :size} board
         x1 margin-left
-        y1 header-height
+        y1 (+ header-height (* overflow padded-block))
         x2 (+ x1
               block-padding
               (* 2 board-outline-width)
               (* width padded-block))
-        y2 (+ y1 (* height padded-block) board-outline-width)
+        y2 (+ y1 (* (- height overflow) padded-block) board-outline-width)
         side-bar-height (- y2 y1)
         bottom-bar-width (- x2 x1)]
     (.setColor g board-outline-color)
