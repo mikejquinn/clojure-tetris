@@ -26,13 +26,13 @@
 
 (defn- place-new-piece
   [game current-time]
-  (let [board (:board game)
+  (let [game (lock-in-dropping-piece game)
+        board (:board game)
         new-piece (board/positioned-piece board (:next-piece game))
         new-ghost (board/dropped-piece board new-piece)]
-    (-> game
-      (lock-in-dropping-piece)
-      (assoc :current-piece new-piece :ghost-piece new-ghost :next-piece (pieces/random-piece)
-             :last-fall-time current-time))))
+    (assoc game
+           :current-piece new-piece :ghost-piece new-ghost :next-piece (pieces/random-piece)
+           :last-fall-time current-time)))
 
 (defn- move-piece
   "Returns a new game with the current piece translated by [x y] spaces,
