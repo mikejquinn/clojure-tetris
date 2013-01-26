@@ -34,12 +34,17 @@
   (let [board (:board game)
         piece-bag (:piece-bag game)
         new-piece (board/positioned-piece board (first piece-bag))
-        new-ghost (board/dropped-piece board new-piece)]
-    (assoc game
-           :current-piece new-piece
-           :ghost-piece new-ghost
-           :piece-bag (rest piece-bag)
-           :last-fall-time current-time)))
+        new-ghost (board/dropped-piece board new-piece)
+        game-is-over (or (board/piece-collision-test board new-piece)
+                         (board/piece-collision-test board (board/translate-positioned-piece new-piece [0 1])))
+        new-status (if game-is-over :over :dropping)]
+    (if game-is-over
+      (assoc game :status :over)
+      (assoc game
+             :current-piece new-piece
+             :ghost-piece new-ghost
+             :piece-bag (rest piece-bag)
+             :last-fall-time current-time))))
 
 (defn- clear-completed-rows
   [game]
@@ -124,9 +129,11 @@
 
 (defn step
   [game input current-time]
-  (-> game
-    (handle-input input current-time)
-    (handle-fall current-time)))
+  (if (= (:status game) :dropping)
+    (-> game
+      (handle-input input current-time)
+      (handle-fall current-time))
+    game))
 
 (defn new-game
   "Initializes a new game with an empty board"

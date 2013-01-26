@@ -1,10 +1,13 @@
 (ns tetris.display
   (:require [tetris.colors :as colors]
             [tetris.game :as game])
-  (:import (java.awt Dimension Canvas)
+  (:import (java.awt Dimension Canvas Font)
            (java.awt.event KeyListener KeyEvent)
-           (javax.swing JFrame JPanel)))
+           (javax.swing JFrame JPanel JLabel))
+  (:use clojure.contrib.math))
 
+(def ^:private game-width 12)
+(def ^:private game-height 22)
 (def ^:private footer-height 20)
 (def ^:private header-height 20)
 (def ^:private board-outline-width 8)
@@ -153,6 +156,17 @@
       { :count 0 :last-second now }
       { :count (+ count 1) :last-second last-second })))
 
+(defn- create-label
+  [text]
+  (let [label (JLabel. text)]
+    (.setFont label (Font. "Sans Serif" Font/PLAIN 22))
+    (let [size (.getPreferredSize label)]
+      (doto label
+        (.setBounds 0 0 (.width size) (.height size))
+        (.setOpaque true)
+        (.setBackground colors/black)
+        (.setForeground colors/white)))))
+
 (defn- create-frame
   [width-px height-px]
   (let [frame (JFrame. "Tetris")]
@@ -161,6 +175,29 @@
       (.setResizable false)
       (.setIgnoreRepaint true))
     frame))
+
+(defn- add-game-over-message
+  [panel]
+  (let [label (create-label "Game Over")
+        board-width-px (+ (* game-width padded-block) block-padding)
+        board-height-px (+ (* game-height padded-block) block-padding)
+        board-origin-x (+ margin-left board-outline-width)
+        board-origin-y header-height
+        label-width (.getWidth label)
+        label-height (.getHeight label)
+        label-x (+ board-origin-x
+                   (floor (- (/ board-width-px 2) 
+                             (/ label-width 2))))
+        label-y (+ board-origin-y
+                   (floor (- (/ board-height-px 2)
+                             (/ label-height 2))))]
+    (.setBounds label label-x label-y label-width label-height)
+    (doto panel
+      (.add label 0)
+      (.setComponentZOrder label 0)
+      (.validate)
+      (.repaint))))
+
 
 (def ^:private command-key-map
   {KeyEvent/VK_LEFT  :move-left
@@ -187,9 +224,7 @@
 
 (defn tetris-swing []
   "Starts a tetris game drawn using Java Swing"
-  (let [game-width 12
-        game-height 22
-        game (game/new-game game-width game-height)
+  (let [game (game/new-game game-width game-height)
         board (:board game)
         { width-px :width height-px :height } (game-screen-size board)
         frame-counter { :count 0 :last-second (.getTime (new java.util.Date)) }
@@ -202,7 +237,6 @@
       (.setLayout nil)
       (.add canvas))
     (doto frame
-      (.setResizable false)
       (.setVisible true)
       (.pack))
     (doto canvas
@@ -219,7 +253,12 @@
           (.dispose graphics)
           (.show buffer-strategy)
           (Thread/sleep 10)
-          (recur game frame-counter)))
+          (if (= (:status game) :dropping)
+            (recur game frame-counter))))
+    (add-game-over-message panel)
+    (loop []
+      (Thread/sleep 10)
+      (recur))
     ))
 
 
