@@ -1,8 +1,8 @@
 (ns tetris.colors
   (:import (java.awt Color)))
 
-(def white (Color/decode "#FFFFFF"))
-(def black (Color/decode "#000000"))
+(def white Color/white)
+(def black Color/black)
 (def light-blue (Color/decode "#2BEFF1"))
 (def dark-blue (Color/decode "#0000F9"))
 (def orange (Color/decode "#EFA200"))
