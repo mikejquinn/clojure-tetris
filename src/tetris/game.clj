@@ -4,6 +4,7 @@
 
 (def ^:private move-delay 150)
 (def ^:private fast-fall-factor (/ 1 10))
+(def ^:private rows-per-level 10)
 
 (defn- rotate-piece-clockwise
   [game]
@@ -61,8 +62,14 @@
   [game]
   (let [{:keys [board removed]} (board/remove-filled-rows (:board game))
         lines (+ (:lines game) removed)
-        score (+ (:score game) (score-for-rows game removed))]
-    (assoc game :board board :lines lines :score score)))
+        score (+ (:score game) (score-for-rows game removed))
+        level-up (> lines (* rows-per-level (:level game)))
+        level (if level-up (+ (:level game) 1) (:level game))
+        fall-delay (if level-up
+                     (* (:fall-delay game) (/ 9 10))
+                     (:fall-delay game))]
+    (assoc game :board board :lines lines :score score 
+           :level level :fall-delay fall-delay)))
 
 (defn- finalize-drop
   "Completes the current drop, and sets up a game with a new piece."
