@@ -82,8 +82,9 @@
   "Returns a new board by removing all filled rows and shifting higher rows
    downward to fill the new available space."
   (let [{{ width :width } :size state :state} board
-        [_ new-state] (reduce (shift-unempty-row state width) [0 {}] (all-row-seqs board))]
-    (assoc board :state new-state)))
+        [rows-removed new-state] (reduce (shift-unempty-row state width) [0 {}] (all-row-seqs board))]
+    {:board (assoc board :state new-state)
+     :removed rows-removed}))
 
 (defn translated-piece-seq
   "Creates a lazy sequence of iterative translations to a positioned piece on

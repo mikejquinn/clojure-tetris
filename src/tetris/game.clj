@@ -48,8 +48,9 @@
 
 (defn- clear-completed-rows
   [game]
-  (let [new-board (board/remove-filled-rows (:board game))]
-    (assoc game :board new-board)))
+  (let [{:keys [board removed]} (board/remove-filled-rows (:board game))
+        lines (+ (:lines game) removed)]
+    (assoc game :board board :lines lines)))
 
 (defn- finalize-drop
   "Completes the current drop, and sets up a game with a new piece."
@@ -146,6 +147,7 @@
     {:board board
      :score 0
      :level 1
+     :lines 0
      :input-delays {}
      :fall-delay 1000  ; milliseconds between piece drop
      :piece-bag piece-bag

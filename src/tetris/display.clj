@@ -92,6 +92,7 @@
       (.setColor (:color next-piece)))
     (doseq [square (:squares next-piece)]
       (draw-filled-square graphics square))
+    (.setText (:lines-label stats-panel) (.toString (:lines game)))
     (.dispose graphics)
     (.show buffer-strategy)))
 
@@ -208,6 +209,7 @@
   []
   (let [panel (JPanel.)
         score-row (create-key-and-value-row "Score:" "0")
+        lines-row (create-key-and-value-row "Lines:" "0")
         level-row (create-key-and-value-row "Level:" "1")
         next-piece-canvas (create-tetris-canvas 4 4)
         next-piece-panel (JPanel.)]
@@ -223,6 +225,7 @@
       (.setBackground colors/black)
       (.add (Box/createRigidArea (Dimension. 0 (* padded-block overflow))))
       (.add (:container score-row))
+      (.add (:container lines-row))
       (.add (:container level-row))
       (.add (Box/createRigidArea (Dimension. 0 30)))
       (.add (create-title-label "Next Piece:"))
@@ -230,6 +233,7 @@
       (.add next-piece-panel))
 
     {:score-label (:value-label score-row)
+     :lines-label (:value-label lines-row)
      :level-label (:value-label level-row)
      :next-piece-canvas next-piece-canvas
      :container panel }
