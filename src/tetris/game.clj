@@ -46,11 +46,23 @@
              :piece-bag (rest piece-bag)
              :last-fall-time current-time))))
 
+(defn- score-for-rows
+  [game lines]
+  (let [level (:level game)
+        multiplier (case lines
+                     1 40
+                     2 100
+                     3 300
+                     4 1200
+                     0)]
+    (* multiplier level)))
+
 (defn- clear-completed-rows
   [game]
   (let [{:keys [board removed]} (board/remove-filled-rows (:board game))
-        lines (+ (:lines game) removed)]
-    (assoc game :board board :lines lines)))
+        lines (+ (:lines game) removed)
+        score (+ (:score game) (score-for-rows game removed))]
+    (assoc game :board board :lines lines :score score)))
 
 (defn- finalize-drop
   "Completes the current drop, and sets up a game with a new piece."

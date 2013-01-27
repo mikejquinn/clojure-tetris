@@ -93,6 +93,8 @@
     (doseq [square (:squares next-piece)]
       (draw-filled-square graphics square))
     (.setText (:lines-label stats-panel) (.toString (:lines game)))
+    (.setText (:score-label stats-panel) (.toString (:score game)))
+    (.setText (:level-label stats-panel) (.toString (:level game)))
     (.dispose graphics)
     (.show buffer-strategy)))
 
