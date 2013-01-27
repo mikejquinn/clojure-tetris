@@ -1,10 +1,12 @@
 (ns tetris.game
   (:require [tetris.pieces :as pieces]
-            [tetris.board :as board]))
+            [tetris.board :as board])
+  (:use clojure.contrib.math))
 
 (def ^:private move-delay 150)
 (def ^:private fast-fall-factor (/ 1 10))
 (def ^:private rows-per-level 10)
+(def ^:private speed-increase-factor (/ 9 10))
 
 (defn- rotate-piece-clockwise
   [game]
@@ -66,7 +68,7 @@
         level-up (> lines (* rows-per-level (:level game)))
         level (if level-up (+ (:level game) 1) (:level game))
         fall-delay (if level-up
-                     (* (:fall-delay game) (/ 9 10))
+                     (* (:fall-delay game) speed-increase-factor)
                      (:fall-delay game))]
     (assoc game :board board :lines lines :score score 
            :level level :fall-delay fall-delay)))
@@ -157,19 +159,21 @@
 
 (defn new-game
   "Initializes a new game with an empty board"
-  [width height]
-  (let [board (board/empty-board width height)
-        piece-bag (pieces/random-piece-generator)
-        first-piece (first piece-bag)
-        piece-bag (rest piece-bag)
-        current-piece (board/positioned-piece board first-piece)]
-    {:board board
-     :score 0
-     :level 1
-     :lines 0
-     :input-delays {}
-     :fall-delay 1000  ; milliseconds between piece drop
-     :piece-bag piece-bag
-     :current-piece current-piece
-     :ghost-piece (board/dropped-piece board current-piece)
-     :status :new}))
+  ([width height] (new-game width height 1))
+  ([width height level]
+   (let [board (board/empty-board width height)
+         piece-bag (pieces/random-piece-generator)
+         first-piece (first piece-bag)
+         piece-bag (rest piece-bag)
+         current-piece (board/positioned-piece board first-piece)
+         fall-delay (* 1000 (expt speed-increase-factor (- level 1)))]
+     {:board board
+      :score 0
+      :level level
+      :lines 0
+      :input-delays {}
+      :fall-delay fall-delay
+      :piece-bag piece-bag
+      :current-piece current-piece
+      :ghost-piece (board/dropped-piece board current-piece)
+      :status :new})))

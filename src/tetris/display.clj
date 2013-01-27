@@ -262,42 +262,44 @@
         (.validate)
         (.repaint)))))
 
-(defn tetris-swing []
+(defn tetris-swing
   "Starts a tetris game drawn using Java Swing"
-  (let [game (game/new-game game-width game-height)
-        board (:board game)
-        {{ board-width :width board-height :height } :size} board
-        frame-counter { :count 0 :last-second (.getTime (new java.util.Date)) }
-        key-code-atom (atom #{})
-        frame (create-frame)
-        canvas (create-tetris-canvas board-width board-height)
-        board-panel (create-board-panel board canvas)
-        stats-panel (create-stats-panel)
-        content-panel (.getContentPane frame)]
-    (doto content-panel
-      (.setLayout (BoxLayout. content-panel BoxLayout/X_AXIS))
-      (.setBorder (BorderFactory/createEmptyBorder 20 20 20 20))
-      (.add board-panel)
-      (.add (Box/createRigidArea (Dimension. 20 0)))
-      (.add (:container stats-panel)))
-    (doto frame
-      (.setVisible true)
-      (.addKeyListener (create-key-listener key-code-atom))
-      (.requestFocus)
-      (.pack))
-    (.createBufferStrategy canvas 2)
-    (.createBufferStrategy (:next-piece-canvas stats-panel) 2)
-    (loop [game (game/start game (System/currentTimeMillis))]
-      (let [current-time (System/currentTimeMillis)
-            game (game/step game @key-code-atom current-time)]
-        (draw-game game canvas)
-        (draw-stats game stats-panel)
-        (Thread/sleep 10)
-        (if (= (:status game) :dropping)
-          (recur game))))
-    (add-game-over-message board-panel)
-    (loop []
-      (Thread/sleep 10)
-      (recur))))
+  ([] (tetris-swing 1))
+  ([level]
+   (let [game (game/new-game game-width game-height level)
+         board (:board game)
+         {{ board-width :width board-height :height } :size} board
+         frame-counter { :count 0 :last-second (.getTime (new java.util.Date)) }
+         key-code-atom (atom #{})
+         frame (create-frame)
+         canvas (create-tetris-canvas board-width board-height)
+         board-panel (create-board-panel board canvas)
+         stats-panel (create-stats-panel)
+         content-panel (.getContentPane frame)]
+     (doto content-panel
+       (.setLayout (BoxLayout. content-panel BoxLayout/X_AXIS))
+       (.setBorder (BorderFactory/createEmptyBorder 20 20 20 20))
+       (.add board-panel)
+       (.add (Box/createRigidArea (Dimension. 20 0)))
+       (.add (:container stats-panel)))
+     (doto frame
+       (.setVisible true)
+       (.addKeyListener (create-key-listener key-code-atom))
+       (.requestFocus)
+       (.pack))
+     (.createBufferStrategy canvas 2)
+     (.createBufferStrategy (:next-piece-canvas stats-panel) 2)
+     (loop [game (game/start game (System/currentTimeMillis))]
+       (let [current-time (System/currentTimeMillis)
+             game (game/step game @key-code-atom current-time)]
+         (draw-game game canvas)
+         (draw-stats game stats-panel)
+         (Thread/sleep 10)
+         (if (= (:status game) :dropping)
+           (recur game))))
+     (add-game-over-message board-panel)
+     (loop []
+       (Thread/sleep 10)
+       (recur)))))
 
 
