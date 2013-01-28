@@ -93,7 +93,7 @@
     (doseq [square (:squares next-piece)]
       (draw-filled-square graphics square))
     (.setText (:lines-label stats-panel) (.toString (:lines game)))
-    (.setText (:score-label stats-panel) (.toString (:score game)))
+    (.setText (:score-label stats-panel) (format "%06d" (:score game)))
     (.setText (:level-label stats-panel) (.toString (:level game)))
     (.dispose graphics)
     (.show buffer-strategy)))
@@ -210,7 +210,9 @@
 (defn- create-stats-panel
   []
   (let [panel (JPanel.)
-        score-row (create-key-and-value-row "Score:" "0")
+        ; Can't figure out how to get JFrames to layout correctly as score length increases,
+        ; so display score at start w/ 6 zeros
+        score-row (create-key-and-value-row "Score:" "000000")
         lines-row (create-key-and-value-row "Lines:" "0")
         level-row (create-key-and-value-row "Level:" "1")
         next-piece-canvas (create-tetris-canvas 4 4)
