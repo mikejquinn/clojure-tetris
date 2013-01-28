@@ -50,9 +50,11 @@
              :last-fall-time current-time))))
 
 (defn- score-for-rows
-  [game lines]
-  (let [level (:level game)
-        multiplier (case lines
+  "Given a level and the number of lines that were removed at one time, returns
+  the score the player has earned.
+  http://tetris.wikia.com/wiki/Scoring"
+  [level lines]
+  (let [multiplier (case lines
                      1 40
                      2 100
                      3 300
@@ -64,7 +66,7 @@
   [game]
   (let [{:keys [board removed]} (board/remove-filled-rows (:board game))
         lines (+ (:lines game) removed)
-        score (+ (:score game) (score-for-rows game removed))
+        score (+ (:score game) (score-for-rows (:level game) removed))
         level-up (> lines (* rows-per-level (:level game)))
         level (if level-up (+ (:level game) 1) (:level game))
         fall-delay (if level-up
