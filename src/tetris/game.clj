@@ -1,6 +1,7 @@
 (ns tetris.game
   (:require [tetris.pieces :as pieces]
-            [tetris.board :as board])
+            [tetris.board :as board]
+            [clojure.contrib.seq-utils :as seq-utils])
   (:use clojure.contrib.math))
 
 (def ^:private move-delay 150)
@@ -10,12 +11,21 @@
 
 (defn- rotate-piece-clockwise
   [game]
-  (let [piece (:current-piece game)
-        rotated-piece (board/rotate-piece-clockwise piece)]
-    (if (board/piece-collision-test (:board game) rotated-piece)
-      game
-      (let [new-ghost (board/dropped-piece (:board game) rotated-piece)]
-        (assoc game :current-piece rotated-piece :ghost-piece new-ghost)))))
+  (let [board (:board game)
+        piece (:current-piece game)
+        ; First test rotation in place. If that doesn't fit, try the positions on
+        ; the left and the right of the current position (wall kick).
+        piece-options (map #(% piece) [#(identity %)
+                                       #(board/translate-positioned-piece % [1 0])
+                                       #(board/translate-positioned-piece % [-1 0])])
+        piece-options (map board/rotate-piece-clockwise piece-options)
+        ; Returns true if the rotated piece, doesn't collide with walls or other pieces
+        rotation-test (fn [rotated-piece]
+                        (not (board/piece-collision-test board rotated-piece)))]
+    (if-let [new-piece (seq-utils/find-first rotation-test piece-options)]
+      (let [new-ghost (board/dropped-piece board new-piece)]
+        (assoc game :current-piece new-piece :ghost-piece new-ghost))
+      game)))
 
 (defn- lock-in-current-piece
   "Converts the currently falling piece (which is described by an origin point
