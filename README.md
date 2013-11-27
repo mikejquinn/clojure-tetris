@@ -14,11 +14,11 @@ Features and implementation details:
 
 To run, just type:
 
-```lein run
+   lein run
 
 You can pass your starting level on startup if you want to skip the early stages:
 
-```lein run -- --level 15
+   lein run -- --level 15
 
 ## License
 
