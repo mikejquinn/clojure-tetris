@@ -253,7 +253,7 @@
       (.setForeground colors/white))
     (let [label-width (.getWidth (.getPreferredSize label))
           label-height (.getHeight (.getPreferredSize label))
-          label-x (+ (floor (- (/ (.getWidth panel) 2) 
+          label-x (+ (floor (- (/ (.getWidth panel) 2)
                                (/ label-width 2))))
           label-y (+ (floor (- (/ (.getHeight panel) 2)
                                (/ label-height 2))))]
