@@ -301,7 +301,6 @@
            (recur game))))
      (add-game-over-message board-panel)
      (loop []
-       (Thread/sleep 10)
        (recur)))))
 
 
